@@ -5,30 +5,35 @@
 let allDivs = document.body.getElementsByTagName('div');
 
 $(function() {
-	createElmts();	
+	// createElmts();	
 
-	createCanvas().then((ctx) => {
-		ctx.beginPath();
-		getPoints().then((pointsArr) => {
-			allPoints = pointsArr;
-			plotPoints(ctx, pointsArr);
+	getPoints().then((pointsArr) => {
+		allPoints = pointsArr;
+		createPaths(pointsArr);
 
-			setPaths($('#startPoint'), ctx, pointsArr);
-			setPaths($('#endPoints'), ctx, pointsArr);
+		togglePaths();
 
-			console.log(`allPoints: ${JSON.stringify(allPoints)}`);
+		createCanvas().then((ctx) => {
+				ctx.beginPath();
+				
+				plotPoints(ctx, pointsArr);
+
+				setPaths($('.startPoint'), ctx, pointsArr);
+				setPaths($('.endPoints'), ctx, pointsArr);
+
+				console.log(`allPoints: ${JSON.stringify(allPoints)}`);
+			
+			hidePoints(); // hide original DOM points
+			
+			// clear canvas & replot points (erase all paths)
+			clearCanvasBtnListener(ctx).then(() => {
+				console.log('replot now');
+				ctx.fillRect(1000,1000,4,4);
+				// ctx.beginPath();			
+				// plotPoints(ctx, allPoints);
+				replotPointsBtnListener(ctx);
+			});
 		})
-		hidePoints(); // hide original DOM points
-		
-		// clear canvas & replot points (erase all paths)
-		clearCanvasBtnListener(ctx).then(() => {
-			console.log('replot now');
-			ctx.fillRect(1000,1000,4,4);
-			// ctx.beginPath();			
-			// plotPoints(ctx, allPoints);
-			replotPointsBtnListener(ctx);
-		});
-		
 		// replotPointsBtnListener(ctx);
 	})
 
@@ -222,8 +227,8 @@ function appendInput() {
 function createElmts() {
 	let elmts = [];
 
-	let input1 = '<input type="text" id="startPoint" placeholder="start point" value=""><br/>';
-	let input2 = '<input type="text" id="endPoints" placeholder="end points" value="">';
+	let input1 = '<input type="text" class="startPoint" placeholder="start point" value=""><br/>';
+	let input2 = '<input type="text" class="endPoints" placeholder="end points" value="">';
 	let clearCanvasBtn = '<button id="clearCanvasBtn" value="">Clear Canvas</button>'
 	let replotPointsBtn = '<button id="replotPointsBtn" value="">Replot Points</button>'
 
@@ -234,17 +239,64 @@ function createElmts() {
 	}
 }
 
+function createPaths(pointsArr) {
+	for (var i=0; i < pointsArr.length; i++) {
+		newPath(pointsArr[i]['id']);
+	}		
+}
+
+//  create startpoint or endpoints input
+function newPath(startId) {
+	// let inputStart = 
+	let input1 = `<input type="text" class="startPoint" placeholder="start point" value=${startId}><br/>`;
+	let input2 = `<input type="text" class="endPoints" placeholder="end points" value=''><br/>`;
+	$('body').append('<div id="wrapper" class="show"></div>');
+	$('#wrapper').append(input1);
+	$('#wrapper').append(input2);
+}
+
 // EVENT HANDLERS
 // retrieve start and end points from inputs
 function setPaths(input, ctx, pointsArr) {
 	input.change(() => {
-	let startPoint = $('#startPoint').val();
-	let endPoints = $('#endPoints').val();
-		console.log(`${startPoint}`);
-		let endPointsArr = endPoints.split(",")
-		if (startPoint.length > 0 && endPoints.length) {
+		console.log(`startPoint length: ${$('.startPoint').length}`);
+
+	for (var i=0; i < $('.startPoint').length; i++) {
+	$('.endPoints').each(function(){	
+		let startPoint = $(`.startPoint:eq(${i})`).val();
+		let endPoints = $(`.endPoints:eq(${i})`).val();
+
+		if (endPoints.length > 0) {
+			let endPointsArr = endPoints.split(",")
+
 			console.log('inputs valid')
 			connectMultiplePoints(startPoint, endPointsArr, ctx, pointsArr)
+		}				
+	})	
+
+	// let startPoint = $('.startPoint').val();
+	// let endPoints = $('.endPoints').val();
+	// 	console.log(`${startPoint}`);
+	// 	let endPointsArr = endPoints.split(",")
+	// 	if (startPoint.length > 0 && endPoints.length) {
+	// 		console.log('inputs valid')
+	// 		connectMultiplePoints(startPoint, endPointsArr, ctx, pointsArr)
+	// 	}
+	}
+})
+}
+
+function togglePaths() {
+	$('body').keypress(function (e){
+		if (e.keyCode === 13) {
+			let wrapper = $('#wrapper');
+			if (wrapper.hasClass('show')) {
+				wrapper.removeClass('show');
+				wrapper.addClass('hide');
+			} else {
+				wrapper.removeClass('hide');
+				wrapper.addClass('show');	
+			}
 		}
 	})
 }
@@ -284,9 +336,9 @@ function clearCanvas(ctx) {
 	ctx.clearRect(0, 0, 1000, 1000);
 
 	// clear input fields
-	$('#startPoint').val('');
-	$('#endPoints').val('');	
-	
+	$('.startPoint').val('');
+	$('.endPoints').val('');	
+
 	// (x, y, width, height)
 	// console.log(`clearCanvas allPoints: ${JSON.stringify(allPoints)}`);
 
