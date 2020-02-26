@@ -1,6 +1,6 @@
 //  globals
  var allPoints;
- var showLetters = false;
+ var showLetters = true;
 
 
 
@@ -13,7 +13,7 @@ $(function() {
 	getPoints().then((pointsArr) => {
 		allPoints = pointsArr;
 		createPaths(pointsArr);	
-		$('#wrapper').append('<h4>Press ENTER to hide / show</h4>')
+		$('#wrapper').append('<h4>Press ENTER to toggle</h4>')
 		toggleElmt('#wrapper');
 		toggleElmt('button');
 
