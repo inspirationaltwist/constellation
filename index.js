@@ -1,17 +1,21 @@
 //  globals
  var allPoints;
+ var showLetters = false;
+
+
 
 // all divs in body
 let allDivs = document.body.getElementsByTagName('div');
 
 $(function() {
-	// createElmts();	
+	addButtons();	
 
 	getPoints().then((pointsArr) => {
 		allPoints = pointsArr;
-		createPaths(pointsArr);
-
-		togglePaths();
+		createPaths(pointsArr);	
+		$('#wrapper').append('<h4>Press ENTER to hide / show</h4>')
+		toggleElmt('#wrapper');
+		toggleElmt('button');
 
 		createCanvas().then((ctx) => {
 				ctx.beginPath();
@@ -95,10 +99,18 @@ function plotPoints(ctx, pointsArr) {
 			let id = point['id'];
 			let left = point['pos']['left'];
 			let top = point['pos']['top'];
+
+			ctx.fillRect(left,top,4,4); // (x, y, width, height)	
+
+
+			toggleLetters(ctx, id, left, top);
+			// showLetters2(ctx, id, left, top);
 				
-			ctx.font = "20px Arial";	
-			ctx.fillText(id, left-3, top-3); 
-			ctx.fillRect(left,top,4,4); // (x, y, width, height)
+		// if ( typeof showLetters == 'function' ) { 
+		// 	if (showLetters) {
+		// 		showLetters(ctx, id, left, top)
+		// 	}
+		// }
 					
 			// ctx.moveTo(top, left);
 			// ctx.lineTo(20, 20);
@@ -191,7 +203,7 @@ function getPos(id, pointsArr, dir) {
 // return point object with matching id
 function getPointById(id, pointsArr) {
 	var filtered = pointsArr.filter(function(point){
-	    return point.id == id;
+	    return point.id.toLowerCase() == id.toLowerCase();
 	});
 
 	return filtered;
@@ -224,22 +236,21 @@ function appendInput() {
 }
 
 // array of html elmts (inputs) to append to DOM
-function createElmts() {
-	let elmts = [];
+function addButtons() {
+	let btns = [];
 
-	let input1 = '<input type="text" class="startPoint" placeholder="start point" value=""><br/>';
-	let input2 = '<input type="text" class="endPoints" placeholder="end points" value="">';
-	let clearCanvasBtn = '<button id="clearCanvasBtn" value="">Clear Canvas</button>'
-	let replotPointsBtn = '<button id="replotPointsBtn" value="">Replot Points</button>'
+	let clearCanvasBtn = '<button id="clearCanvasBtn" class="show-inline" value="">Clear Canvas</button>'
+	let replotPointsBtn = '<button id="replotPointsBtn" class="show-inline" value="">Replot Points</button>'
 
-	elmts.push(input1, input2, clearCanvasBtn, replotPointsBtn);
+	btns.push(clearCanvasBtn, replotPointsBtn);
 
-	for (var i=0; i < elmts.length; i++) {
-		$('body').append(elmts[i]);
+	for (var i=0; i < btns.length; i++) {
+		$('body').append(btns[i]);
 	}
 }
 
 function createPaths(pointsArr) {
+	$('#wrapper').append('<h4>Hit "Enter" key to toggle</h4>');
 	for (var i=0; i < pointsArr.length; i++) {
 		newPath(pointsArr[i]['id']);
 	}		
@@ -247,13 +258,17 @@ function createPaths(pointsArr) {
 
 //  create startpoint or endpoints input
 function newPath(startId) {
-	// let inputStart = 
-	let input1 = `<input type="text" class="startPoint" placeholder="start point" value=${startId}><br/>`;
+	
+	let input1 = `<input type="text" class="startPoint" placeholder="start point" value=${startId.toUpperCase()}> &nbsp;&nbsp; -> &nbsp;&nbsp; `;
 	let input2 = `<input type="text" class="endPoints" placeholder="end points" value=''><br/>`;
 	$('body').append('<div id="wrapper" class="show"></div>');
 	$('#wrapper').append(input1);
 	$('#wrapper').append(input2);
 }
+
+// function eraseLine(ctx) {
+// 	ctx.clearRect(100, 100, 500, 500);
+// }
 
 // EVENT HANDLERS
 // retrieve start and end points from inputs
@@ -267,7 +282,7 @@ function setPaths(input, ctx, pointsArr) {
 		let endPoints = $(`.endPoints:eq(${i})`).val();
 
 		if (endPoints.length > 0) {
-			let endPointsArr = endPoints.split(",")
+			let endPointsArr = endPoints.replace(/ /g,'').toLowerCase().split(",")
 
 			console.log('inputs valid')
 			connectMultiplePoints(startPoint, endPointsArr, ctx, pointsArr)
@@ -286,19 +301,61 @@ function setPaths(input, ctx, pointsArr) {
 })
 }
 
-function togglePaths() {
+// toggle elmt on ENTER key press
+function toggleElmt(elmtStr) {
+	let elmt = $(elmtStr);
+	let show = 'show';
+
+	if (elmtStr === 'button') {
+		show = 'show-inline';
+	}
+
 	$('body').keypress(function (e){
 		if (e.keyCode === 13) {
-			let wrapper = $('#wrapper');
-			if (wrapper.hasClass('show')) {
-				wrapper.removeClass('show');
-				wrapper.addClass('hide');
+			if (elmt.hasClass(show) || elmt.hasClass(show)) {
+				elmt.removeClass(show);
+				elmt.removeClass(show);
+				elmt.addClass('hide');
 			} else {
-				wrapper.removeClass('hide');
-				wrapper.addClass('show');	
+				elmt.removeClass('hide');
+				elmt.addClass(show);	
 			}
 		}
 	})
+}
+
+// toggle letter labels on SHIFT key press
+// function toggleLetters() {
+// 	$('body').keypress(function (e){
+// 		if (e.keyCode === 16) {
+// 		}
+// 	})
+// }
+
+function showLetters2(ctx, id, left, top) {
+	if (showLetters) {
+		ctx.font = "20px Arial";	
+		ctx.fillText(id, left-3, top-3); 
+	}
+}
+
+function toggleLetters(ctx, id, left, top) {
+	if (showLetters) {
+		ctx.font = "14px Arial";	
+		ctx.fillText(id.toUpperCase(), left-5, top-5); 
+	}
+	// $('body').keypress(function (e){
+	// 	if (e.keyCode === 16) {	
+			// console.log('shift key');
+			// if (showLetters = true) {
+			// 	ctx.font = "20px Arial";	
+			// 	ctx.fillText(id, left-3, top-3); 				
+			// 	showLetters = false;
+			// } else {
+			// 	showLetters = true;
+			// }
+	// 	}
+	// })
 }
 
 // clear canvas on btn click
@@ -336,7 +393,6 @@ function clearCanvas(ctx) {
 	ctx.clearRect(0, 0, 1000, 1000);
 
 	// clear input fields
-	$('.startPoint').val('');
 	$('.endPoints').val('');	
 
 	// (x, y, width, height)
