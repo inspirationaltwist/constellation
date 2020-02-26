@@ -1,21 +1,45 @@
+//  globals
+ var allPoints;
+
 // all divs in body
 let allDivs = document.body.getElementsByTagName('div');
 
 $(function() {
+	createElmts();	
+
 	createCanvas().then((ctx) => {
 		ctx.beginPath();
-		plotPoints(ctx);
+		getPoints().then((pointsArr) => {
+			allPoints = pointsArr;
+			plotPoints(ctx, pointsArr);
+
+			setPaths($('#startPoint'), ctx, pointsArr);
+			setPaths($('#endPoints'), ctx, pointsArr);
+
+			console.log(`allPoints: ${JSON.stringify(allPoints)}`);
+		})
+		hidePoints(); // hide original DOM points
 		
-		// drawLine(ctx, (100,100), (500.00001525878906, 750));
-		// drawLine(ctx, (500.00001525878906, 750), (30, 35));
+		// clear canvas & replot points (erase all paths)
+		clearCanvasBtnListener(ctx).then(() => {
+			console.log('replot now');
+			ctx.fillRect(1000,1000,4,4);
+			// ctx.beginPath();			
+			// plotPoints(ctx, allPoints);
+			replotPointsBtnListener(ctx);
+		});
+		
+		// replotPointsBtnListener(ctx);
 	})
 
-    getPoints().then((points) => {
-    	console.log(`getPoints: ${JSON.stringify(points)}`);
-    });
+
+    // getPoints().then((points) => {
+    // 	allPoints = points;
+    // 	console.log(`allPoints: ${JSON.stringify(allPoints)}`);
+    // });
 });
 
-// return array of point objects
+// return array of point objects from DOM
 // [{id: "b", top: "100", left: "100"}, 
 function getPoints() {
 	let dfd = jQuery.Deferred();
@@ -36,25 +60,29 @@ function getPoints() {
 	});
 
 	dfd.resolve(points);
+
+	if (points.length === 0) {
+		console.log('points not retrieved');
+	}
 	return dfd.promise();
 }
 
 // hide original points from DOC
-function clear() {
+function hidePoints() {
 	$('.a').addClass('hide');
 }
 
 
 // plot points on HTML canvas
-function plotPoints(ctx) {
+function plotPoints(ctx, pointsArr) {
 	let currentIndex;
-	getPoints().then((pointsArr) => {
+	// getPoints().then((pointsArr) => {
 		// getPos("b", pointsArr, null);
-		// console.log(`plotPoints: ${pointsArr.length}`);
+		console.log(`plotPoints length: ${pointsArr.length}`);
 
 		// console.log(`getPointById: ${JSON.stringify(getPointById("f", pointsArr))}`);
 
-			for (var i = 0; i < pointsArr.length; i++) {
+		for (var i = 0; i < pointsArr.length; i++) {
 			// let startPos = points[i]['pos'];	
 
 			// let endPos = pointsArr[3]['pos'];
@@ -79,11 +107,13 @@ function plotPoints(ctx) {
 		// connectTwoPoints('e', 'f', ctx, pointsArr);
 		// connectTwoPoints('b', 'd', ctx, pointsArr);
 
-		connectMultiplePoints('b', ['c', 'd', 'e'], ctx, pointsArr)
-		// drawLine(ctx, 100, 100, 750, 500.00001525878906);
-	})
+		// connectMultiplePoints('b', ['c', 'd', 'e'], ctx, pointsArr)
 
-	clear();
+		// eraseLines(ctx);
+		// drawLine(ctx, 100, 100, 750, 500.00001525878906);
+	// })
+
+	// clear();
 }
 
 // draw line connecting two points by letter ids
@@ -173,44 +203,142 @@ function getPointById(id, pointsArr) {
 	// return resArr[0];
 }
 
-// static placeholder function
-function staticLines(ctx) {
-	ctx.moveTo(35, 30);
-	ctx.lineTo(75, 50);
-	ctx.stroke(); 	
+// USER INTERFACE
+function appendInput() {
+	// let label1 = '<label for="startPoint">Start point</label>';
+	let input1 = '<input type="text" id="startPoint" placeholder="start point" value=""><br/>';
 
-	ctx.moveTo(75, 50);
-	ctx.lineTo(50, 50);
-	ctx.stroke(); 		
+	// let label2 = '<label for="endPoint">End points</label>';
+	let input2 = '<input type="text" id="endPoints" placeholder="end points" value="">';
+	
+	// $('body').append(label1);
+	$('body').append(input2);
 
-	ctx.moveTo(75, 50);
-	ctx.lineTo(100, 100);
-	ctx.stroke(); 	
-
-	ctx.moveTo(75, 50);
-	ctx.lineTo(750, 500.00001525878906);
-	ctx.stroke(); 
-
-	ctx.moveTo(35, 30);
-	ctx.lineTo(100, 100);
-	ctx.stroke(); 	
-
-	ctx.moveTo(50, 50);
-	ctx.lineTo(100, 100);
-	ctx.stroke(); 		
-
-	ctx.moveTo(50, 50);
-	ctx.lineTo(750, 500.00001525878906);
-	ctx.stroke(); 	
-
-	ctx.moveTo(35, 30);
-	ctx.lineTo(750, 500.00001525878906);
-	ctx.stroke(); 	
-
-	ctx.moveTo(100,100);
-	ctx.lineTo(750, 500.00001525878906);
-	ctx.stroke(); 
+	// $('body').append(label2);
+	$('body').append(input1);
 }
+
+// array of html elmts (inputs) to append to DOM
+function createElmts() {
+	let elmts = [];
+
+	let input1 = '<input type="text" id="startPoint" placeholder="start point" value=""><br/>';
+	let input2 = '<input type="text" id="endPoints" placeholder="end points" value="">';
+	let clearCanvasBtn = '<button id="clearCanvasBtn" value="">Clear Canvas</button>'
+	let replotPointsBtn = '<button id="replotPointsBtn" value="">Replot Points</button>'
+
+	elmts.push(input1, input2, clearCanvasBtn, replotPointsBtn);
+
+	for (var i=0; i < elmts.length; i++) {
+		$('body').append(elmts[i]);
+	}
+}
+
+// EVENT HANDLERS
+// retrieve start and end points from inputs
+function setPaths(input, ctx, pointsArr) {
+	input.change(() => {
+	let startPoint = $('#startPoint').val();
+	let endPoints = $('#endPoints').val();
+		console.log(`${startPoint}`);
+		let endPointsArr = endPoints.split(",")
+		if (startPoint.length > 0 && endPoints.length) {
+			console.log('inputs valid')
+			connectMultiplePoints(startPoint, endPointsArr, ctx, pointsArr)
+		}
+	})
+}
+
+// clear canvas on btn click
+function clearCanvasBtnListener(ctx) {
+	let dfd = $.Deferred();
+
+	$('#clearCanvasBtn').on('click', () => {
+		console.log('clearCanvasBtn clicked');
+		clearCanvas(ctx);
+	})
+
+	dfd.resolve();
+
+	return dfd.promise();
+}
+
+// user clicks replot lines btn
+function replotPointsBtnListener(ctx) {
+	let dfd = $.Deferred();
+
+	$('#replotPointsBtn').on('click', () => {
+		console.log('replotPointsBtn clicked');
+		console.log(`allPoints length: ${allPoints.length}`);
+			ctx.beginPath();			
+			plotPoints(ctx, allPoints);
+	})
+
+	dfd.resolve();
+
+	return dfd.promise();
+}
+
+// clear canvas & erase lines
+function clearCanvas(ctx) {
+	ctx.clearRect(0, 0, 1000, 1000);
+
+	// clear input fields
+	$('#startPoint').val('');
+	$('#endPoints').val('');	
+	
+	// (x, y, width, height)
+	// console.log(`clearCanvas allPoints: ${JSON.stringify(allPoints)}`);
+
+   // getPoints().then((points) => {
+    	// console.log(`eraseLines getPoints: ${JSON.stringify(points)}`);
+
+    	// plotPoints(ctx, allPoints)
+    // });	
+	// createCanvas().then((ctx) => {
+	// 	ctx.beginPath();
+	// 	plotPoints(ctx);
+	// })
+}
+
+// // static placeholder function
+// function staticLines(ctx) {
+// 	ctx.moveTo(35, 30);
+// 	ctx.lineTo(75, 50);
+// 	ctx.stroke(); 	
+
+// 	ctx.moveTo(75, 50);
+// 	ctx.lineTo(50, 50);
+// 	ctx.stroke(); 		
+
+// 	ctx.moveTo(75, 50);
+// 	ctx.lineTo(100, 100);
+// 	ctx.stroke(); 	
+
+// 	ctx.moveTo(75, 50);
+// 	ctx.lineTo(750, 500.00001525878906);
+// 	ctx.stroke(); 
+
+// 	ctx.moveTo(35, 30);
+// 	ctx.lineTo(100, 100);
+// 	ctx.stroke(); 	
+
+// 	ctx.moveTo(50, 50);
+// 	ctx.lineTo(100, 100);
+// 	ctx.stroke(); 		
+
+// 	ctx.moveTo(50, 50);
+// 	ctx.lineTo(750, 500.00001525878906);
+// 	ctx.stroke(); 	
+
+// 	ctx.moveTo(35, 30);
+// 	ctx.lineTo(750, 500.00001525878906);
+// 	ctx.stroke(); 	
+
+// 	ctx.moveTo(100,100);
+// 	ctx.lineTo(750, 500.00001525878906);
+// 	ctx.stroke(); 
+// }
 
 
 function getPositionXY(elmt) { 
